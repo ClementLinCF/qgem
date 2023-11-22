@@ -101,10 +101,10 @@ def produce_report(command, tflops, peak_tflops):
 
 def get_type_dict():
     type_dict = {
-        "R_16F": 196.6,
-        "R_32F": 24.6,
-        "R_64F": 24.6,
-        "R_16B": 196.6
+        "R_16F": 232.7,
+        "R_32F": 29.1,
+        "R_64F": 29.1,
+        "R_16B": 232.7
     }
     return type_dict
 
@@ -156,6 +156,7 @@ except FileNotFoundError:
     print("report.xlsx does not exist. Skipping removal.")
 
 
+base_gfreq = 1.42
 peak_tflops = 24.6
 type_dict = get_type_dict()
 mnk_values = get_mnk_list()
@@ -209,11 +210,13 @@ for type_key in type_dict:
         clock_thread.join()
         # clock_thread.terminate()
         print(f"Maximum GPU Clock: {max_clock[0]} MHz")
+        real_gpu_gfreq = max_clock[0] / 1000
         max_clock = [0]
 
 
+
         tflops = get_TFLOPS()
-        produce_report(command, tflops, type_dict[type_key])
+        produce_report(command, tflops, (type_dict[type_key] / base_gfreq) * real_gpu_gfreq)
 
 
 # execute_program(command)
