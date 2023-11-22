@@ -16,6 +16,52 @@ def execute_program(command):
     except subprocess.CalledProcessError as e:
         print(f"Error running qgemm.py: {e}")
 
+
+def check_mnkabc_match(M, N, K, LDA, LDB, LDC):
+    # Define the regular expression pattern to match the desired values
+    pattern = r'-m\s+(\d+).*-n\s+(\d+).*-k\s+(\d+).*--lda\s+(\d+).*--ldb\s+(\d+).*--ldc\s+(\d+)'
+
+    # Read from the log file
+    with open('qgemm_tmp.log', 'r') as log_file:
+        log_string = log_file.read()
+
+    # Find all matches in the log string
+    matches = re.findall(pattern, log_string)
+        
+    # os.remove('qgemm_tmp.log')
+
+    if matches:
+        for match in matches:
+            m_value = int(match[0])
+            n_value = int(match[1])
+            k_value = int(match[2])
+            lda_value = int(match[3])
+            ldb_value = int(match[4])
+            ldc_value = int(match[5])
+
+            if (m_value == M and
+                n_value == N and
+                k_value == K and
+                lda_value == LDA and
+                ldb_value == LDB and
+                ldc_value == LDC):
+                print("****** m,n,k,lda,ldb,ldc are identical")
+                return True
+            else:
+                print("****** m,n,k,lda,ldb,ldc are not identical *********")
+                print(f"m_value: {m_value} vs self.M: {M}")
+                print(f"n_value: {n_value} vs self.N: {N}")
+                print(f"k_value: {k_value} vs self.K: {K}")
+                print(f"lda_value: {lda_value} vs self.LDA: {LDA}")
+                print(f"ldb_value: {ldb_value} vs self.LDB: {LDB}")
+                print(f"ldc_value: {ldc_value} vs self.LDC: {LDC}")
+                print("****************************************************")
+                return False, m_value, n_value, k_value, lda_value, ldb_value, ldc_value
+    else:
+        print("**** Pattern not found in the log file.")
+        return None
+
+
 def get_TFLOPS():
     # Read from the log file
     with open('qgemm_tmp.log', 'r') as log_file:
@@ -48,7 +94,7 @@ def get_TFLOPS():
 def produce_report(command, tflops, peak_tflops):
     column_names = ['PRECISION_A', 'PRECISION_B', 'PRECISION_C', 'COMPUTE_PRECISION',
                     'OP_A', 'OP_B', 'M', 'N', 'K', 'LDA', 'LDB', 'LDC', 'BATCH_COUNT',
-                    'TIME_SPAN', 'EX', 'TFLOPS', 'PEAK_TFLOPS', 'efficiency']
+                    'TIME_SPAN', 'EX', 'TFLOPS', 'PEAK_TFLOPS', 'efficiency', 'P_M', 'P_N', 'P_K', 'P_LDA', 'P_LDB', 'P_LDC', 'Status']
 
     # Load an existing Excel workbook if it exists, otherwise create a new one
     try:
@@ -92,8 +138,21 @@ def produce_report(command, tflops, peak_tflops):
     sheet.cell(row=next_row, column=len(command) + 3 - 2).value = efficiency
     sheet.cell(row=next_row, column=len(command) + 3 - 2).number_format = '0.00%'
 
+    is_match, m_value, n_value, k_value, lda_value, ldb_value, ldc_value = check_mnkabc_match(
+        command[8], command[9], command[10], command[11], command[12], command[13])
 
-
+    if is_match == None:
+        sheet.cell(row=next_row, column=len(command) + 10 - 2, value="Error")
+    else:
+        sheet.cell(row=next_row, column=len(command) + 10 - 2, value="OK")
+        if is_match == False:
+            sheet.cell(row=next_row, column=len(command) + 4 - 2, value=m_value)
+            sheet.cell(row=next_row, column=len(command) + 5 - 2, value=n_value)
+            sheet.cell(row=next_row, column=len(command) + 6 - 2, value=k_value)
+            sheet.cell(row=next_row, column=len(command) + 7 - 2, value=lda_value)
+            sheet.cell(row=next_row, column=len(command) + 8 - 2, value=ldb_value)
+            sheet.cell(row=next_row, column=len(command) + 9 - 2, value=ldc_value)
+            
     sheet.freeze_panes = 'A2'
 
     # Save the Excel workbook
@@ -206,6 +265,7 @@ for type_key in type_dict:
         command[11] = str(a)
         command[12] = str(b)
         command[13] = str(c)
+        command[14] = "72"
 
         print(command)
 

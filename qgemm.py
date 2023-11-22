@@ -22,6 +22,7 @@ class MatrixMultiplier:
         self.TIME_SPAN = int(TIME_SPAN)
         self.TIME_SPAN = int(TIME_SPAN)
         self.EX = EX
+        self.isMatchmnkabc = True
     def execute_program(self):
         # Set environment variables
         os.environ['ROCBLAS_LAYER'] = '6'
@@ -71,6 +72,7 @@ class MatrixMultiplier:
                         ldb_value == self.LDB and
                         ldc_value == self.LDC):
                         output_file.write("ok\n")
+                        self.isMatchmnkabc = True
                     else:
                         output_file.write(f"m_value: {m_value} vs self.M: {self.M}")
                         output_file.write(f"n_value: {n_value} vs self.N: {self.N}")
@@ -78,6 +80,7 @@ class MatrixMultiplier:
                         output_file.write(f"lda_value: {lda_value} vs self.LDA: {self.LDA}")
                         output_file.write(f"ldb_value: {ldb_value} vs self.LDB: {self.LDB}")
                         output_file.write(f"ldc_value: {ldc_value} vs self.LDC: {self.LDC}")
+                        self.isMatchmnkabc = False
 
             else:
                 output_file.write("Pattern not found in the log file.")
