@@ -102,28 +102,32 @@ def produce_report(command, tflops, peak_tflops):
 def get_type_dict():
     type_dict = {
         "R_16F": 232.7,
+        "R_16F_C_32": 232.7,
         "R_32F": 29.1,
         "R_64F": 29.1,
         "R_16B": 232.7
     }
     return type_dict
 
-def get_mnk_list():
+def get_mnkabc_list():
     # Read the content of mnk.log
     with open('mnk.log', 'r') as file:
         content = file.read()
 
     # Use regular expressions to extract m, n, and k values from each line
-    pattern = r'(\d+),\s*(\d+),\s*(\d+)'
+    # pattern = r'(\d+),\s*(\d+),\s*(\d+)'
+    pattern = r'(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)'
+
     matches = re.findall(pattern, content)
 
     # Store the extracted m, n, and k values in a list of tuples
-    mnk_values = [(int(m), int(n), int(k)) for m, n, k in matches]
+    mnkabc_values = [(int(m), int(n), int(k), int(a), int(b), int(c)) for m, n, k, a, b, c in matches]
+
 
     # Print the extracted values
     #for m, n, k in mnk_values:
     #    print(f"m = {m}, n = {n}, k = {k}")
-    return mnk_values
+    return mnkabc_values
 
 def get_gpu_clock(max_clock, stop_event):
     # clocks = []
@@ -156,10 +160,14 @@ except FileNotFoundError:
     print("report.xlsx does not exist. Skipping removal.")
 
 
+print("QQQQQQQQQQQQQQ")
+
 base_gfreq = 1.42
 peak_tflops = 24.6
 type_dict = get_type_dict()
-mnk_values = get_mnk_list()
+mnkabc_values = get_mnkabc_list()
+
+print(mnkabc_values)
 
 # Create a list to store the maximum clock frequency
 max_clock = [0]
@@ -168,54 +176,63 @@ max_clock = [0]
 command = ['python3', 'qgemm.py', 'R_32F', 'R_32F', 'R_32F', 'R_32F', 'OP_N', 'OP_T',
            '8640', '8640', '8640', '8640', '8640', '8640', '72', '30']
 
+# ./gemm R_16F R_16F R_32F R_32F OP_N OP_T 8640 8640 8640 8640 8640 8640 72 30 ex
 for type_key in type_dict:
     if type_key == "R_16F":
-        command = ['python3', 'qgemm.py', 'R_32F', 'R_32F', 'R_32F', 'R_32F', 'OP_N', 'OP_T',
+        command = ['python3', 'qgemm.py', 'R_16F', 'R_16F', 'R_16F', 'R_16F', 'OP_N', 'OP_T',
             '8640', '8640', '8640', '8640', '8640', '8640', '72', '30', 'ex']
-    if type_key == "R_16B":
+    elif type_key == "R_16B":
         command = ['python3', 'qgemm.py', 'R_16B', 'R_16B', 'R_32F', 'R_32F', 'OP_N', 'OP_T',
             '8640', '8640', '8640', '8640', '8640', '8640', '72', '30', 'ex']
+    elif type_key == "R_16F_C_32":
+        command = ['python3', 'qgemm.py', 'R_16F', 'R_16F', 'R_32F', 'R_32F', 'OP_N', 'OP_T',
+            '8640', '8640', '8640', '8640', '8640', '8640', '72', '30', 'ex']
 
-    command[2] = type_key
-    command[3] = type_key
-    command[4] = type_key
-    command[5] = type_key
+    if type_key != "R_16F_C_32" and type_key != "R_16B":
+        command[2] = type_key
+        command[3] = type_key
+        command[4] = type_key
+        command[5] = type_key
     
-    if type_key == "R_16B":
-        command[4] = "R_32F"
-        command[5] = "R_32F"
+    # if type_key == "R_16B":
+    #     command[4] = "R_32F"
+    #     command[5] = "R_32F"
 
 
-    for m, n, k in mnk_values:
+    for m, n, k, a, b, c in mnkabc_values:
         command[8] = str(m)
         command[9] = str(n)
         command[10] = str(k)
-        command[11] = str(m)
-        command[12] = str(n)
-        command[13] = str(k)
+        command[11] = str(a)
+        command[12] = str(b)
+        command[13] = str(c)
 
         print(command)
 
-        stop_event = threading.Event()
-        # Create a thread to run the get_gpu_clock function in the background
-        clock_thread = threading.Thread(target=get_gpu_clock, args=(max_clock, stop_event))
-        clock_thread.daemon = True  # Set the thread as a daemon so it will exit when the main program exits
-        clock_thread.start()
 
-        print("cocotion test start exe")
-        execute_program(command)
-        print("cocotion test after exe")
+        while int(command[14]) >= 1:
+            stop_event = threading.Event()
+            # Create a thread to run the get_gpu_clock function in the background
+            clock_thread = threading.Thread(target=get_gpu_clock, args=(max_clock, stop_event))
+            clock_thread.daemon = True  # Set the thread as a daemon so it will exit when the main program exits
+            clock_thread.start()
 
-        stop_event.set()
-        clock_thread.join()
-        # clock_thread.terminate()
-        print(f"Maximum GPU Clock: {max_clock[0]} MHz")
-        real_gpu_gfreq = max_clock[0] / 1000
-        max_clock = [0]
+            print("cocotion test start exe")
+            execute_program(command)
+            print("cocotion test after exe")
 
+            stop_event.set()
+            clock_thread.join()
+            # clock_thread.terminate()
+            print(f"Maximum GPU Clock: {max_clock[0]} MHz")
+            real_gpu_gfreq = max_clock[0] / 1000
+            max_clock = [0]
 
+            tflops = get_TFLOPS()
+            if tflops != None and tflops > 0:
+                break
+            command[14] = str(int(command[14]) // 2)
 
-        tflops = get_TFLOPS()
         produce_report(command, tflops, (type_dict[type_key] / base_gfreq) * real_gpu_gfreq)
 
 
