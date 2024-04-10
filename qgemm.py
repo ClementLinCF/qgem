@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import subprocess
 
@@ -11,14 +12,14 @@ class MatrixMultiplier:
         self.COMPUTE_PRECISION = COMPUTE_PRECISION
         self.OP_A = OP_A
         self.OP_B = OP_B
-        self.M = M
-        self.N = N
-        self.K = K
-        self.LDA = LDA
-        self.LDB = LDB
-        self.LDC = LDC
-        self.BATCH_COUNT = BATCH_COUNT
-        self.TIME_SPAN = TIME_SPAN
+        self.M = int(M)
+        self.N = int(N)
+        self.K = int(K)
+        self.LDA = int(LDA)
+        self.LDB = int(LDB)
+        self.LDC = int(LDC)
+        self.BATCH_COUNT = int(BATCH_COUNT)
+        self.TIME_SPAN = int(TIME_SPAN)
 
     def execute_program(self):
         # Set environment variables
@@ -114,7 +115,7 @@ class MatrixMultiplier:
 
 
 def main(args):
-    if len(args) != 15:
+    if len(args) != 14:
         print("Usage: python qgemm.py PRECISION_A PRECISION_B PRECISION_C COMPUTE_PRECISION OP_A OP_B M N K LDA LDB LDC BATCH_COUNT TIME_SPAN")
         return
 
