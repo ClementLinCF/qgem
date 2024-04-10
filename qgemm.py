@@ -113,17 +113,36 @@ class MatrixMultiplier:
 
 
 
+def main(args):
+    if len(args) != 15:
+        print("Usage: python qgemm.py PRECISION_A PRECISION_B PRECISION_C COMPUTE_PRECISION OP_A OP_B M N K LDA LDB LDC BATCH_COUNT TIME_SPAN")
+        return
+
+    precision_a, precision_b, precision_c, compute_precision, op_a, op_b, m, n, k, lda, ldb, ldc, batch_count, time_span = args
+
+    instance = MatrixMultiplier(precision_a, precision_b, precision_c, compute_precision,
+                                op_a, op_b, m, n, k, lda, ldb, ldc, batch_count, time_span)
+
+    instance.execute_program()
+    instance.check_mnk()
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
+
+
+
 
 # Example usage
-instance = MatrixMultiplier('R_32F', 'R_32F', 'R_32F', 'R_32F', 'OP_N', 'OP_T', 8640, 8640, 8640, 8640, 8640, 8640, 72, 300)
-instance.execute_program()
-instance.check_mnk()
+# instance = MatrixMultiplier('R_32F', 'R_32F', 'R_32F', 'R_32F', 'OP_N', 'OP_T', 8640, 8640, 8640, 8640, 8640, 8640, 72, 300)
+# instance.execute_program()
+# instance.check_mnk()
 
-tflops = instance.get_TFLOPS()
+# tflops = instance.get_TFLOPS()
 
-with open('qgemm.log', 'w') as output_file:
-    output_file.write("QQQQQQ")
-    output_file.write(tflops)
+# with open('qgemm.log', 'w') as output_file:
+#     output_file.write("QQQQQQ")
+#     output_file.write(tflops)
 
 
 
