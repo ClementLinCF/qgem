@@ -5,7 +5,7 @@ import subprocess
 
 class MatrixMultiplier:
     def __init__(self, PRECISION_A, PRECISION_B, PRECISION_C, COMPUTE_PRECISION,
-                 OP_A, OP_B, M, N, K, LDA, LDB, LDC, BATCH_COUNT, TIME_SPAN):
+                 OP_A, OP_B, M, N, K, LDA, LDB, LDC, BATCH_COUNT, TIME_SPAN, EX):
         self.PRECISION_A = PRECISION_A
         self.PRECISION_B = PRECISION_B
         self.PRECISION_C = PRECISION_C
@@ -20,7 +20,8 @@ class MatrixMultiplier:
         self.LDC = int(LDC)
         self.BATCH_COUNT = int(BATCH_COUNT)
         self.TIME_SPAN = int(TIME_SPAN)
-
+        self.TIME_SPAN = int(TIME_SPAN)
+        self.EX = EX
     def execute_program(self):
         # Set environment variables
         os.environ['ROCBLAS_LAYER'] = '6'
@@ -33,7 +34,7 @@ class MatrixMultiplier:
             self.OP_A, self.OP_B,
             str(self.M), str(self.N), str(self.K),
             str(self.LDA), str(self.LDB), str(self.LDC),
-            str(self.BATCH_COUNT), str(self.TIME_SPAN)
+            str(self.BATCH_COUNT), str(self.TIME_SPAN), self.EX
         ]
 
         # Execute the program with subprocess
@@ -115,14 +116,14 @@ class MatrixMultiplier:
 
 
 def main(args):
-    if len(args) != 14:
+    if len(args) < 14:
         print("Usage: python qgemm.py PRECISION_A PRECISION_B PRECISION_C COMPUTE_PRECISION OP_A OP_B M N K LDA LDB LDC BATCH_COUNT TIME_SPAN")
         return
 
-    precision_a, precision_b, precision_c, compute_precision, op_a, op_b, m, n, k, lda, ldb, ldc, batch_count, time_span = args
+    precision_a, precision_b, precision_c, compute_precision, op_a, op_b, m, n, k, lda, ldb, ldc, batch_count, time_span, ex = args
 
     instance = MatrixMultiplier(precision_a, precision_b, precision_c, compute_precision,
-                                op_a, op_b, m, n, k, lda, ldb, ldc, batch_count, time_span)
+                                op_a, op_b, m, n, k, lda, ldb, ldc, batch_count, time_span, ex)
 
     instance.execute_program()
     instance.check_mnk()
